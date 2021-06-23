@@ -1,8 +1,13 @@
-// TikTakToe.cpp : Этот файл содержит функцию "main". Здесь начинается и заканчивается выполнение программы.
-//
-
 #include <iostream>
 #include <cstdlib>
+
+#if defined(_WIN32) // Проверка что соберается в ОС Windows
+
+	#define WIN_OS
+
+#endif
+
+#define DEBUG
 
 int getRandomNumber(int min, int max)
 {
@@ -17,6 +22,7 @@ enum Cell {
 	ZERO = '0',
 	EMPTY = ' '
 };
+
 enum Progress
 {
 	IN_PROGRESS,
@@ -75,7 +81,12 @@ void initGame(Field& inGame) // Инициализация игры
 
 void inline clearScreen()
 {
+	#ifdef WIN_OS
 	system("cls");
+	#endif
+	#ifndef WIN_OS
+	system("clear");
+	#endif	
 }
 
 void printField(const Field& inGame)
@@ -118,24 +129,236 @@ void printField(const Field& inGame)
 	std::cout << "Enter coordinate X and Y : " << std::endl;
 }
 
-Coord getHumanCoordinate(Field& takeCoord)
+Coord getHumanCoordinate(Field& inGame)
 {
 
-	return { 0, 0 };
+	Coord buffer;
+
+	do
+	{
+	std::cout << "Enter x cordinate = ";
+	std::cin >> buffer.x;
+	std::cout << "Enter y cordinate = ";
+	std::cin >> buffer.y;
+	if (buffer.x == 0 || buffer.y == 0 ||  buffer.x > 3 || buffer.y > 3 || inGame.ppFIeld[buffer.y - 1][buffer.x -1] != EMPTY)
+	{
+		std::cout << "Wrong value, or the cell is busy! Pls, try again" << std::endl;
+	}
+		#ifdef DEBUG
+		std::cout << inGame.ppFIeld[buffer.y - 1][buffer.x -1] << std::endl;		
+		#endif
+
+	} while ( buffer.x == 0 || buffer.y == 0 ||  buffer.x > 3 || buffer.y > 3 || inGame.ppFIeld[buffer.y - 1][buffer.x -1] != EMPTY );
+
+	
+
+	buffer.x--;
+	buffer.y--;
+
+	return buffer;
 }
 
-Coord getAiCoordinate(Field& takeCoord)
+
+Coord getAiCoordinate(Field& inGame)
 {
+	if (inGame.ppFIeld[1][1] == EMPTY)
+	{
+		return { 1, 1 };
+	}
+	if (inGame.ppFIeld[0][2] == EMPTY)
+	{
+		return { 0, 2 };
+	}
+		if (inGame.ppFIeld[2][0] == EMPTY)
+	{
+		return { 2, 0 };
+	}
+		if (inGame.ppFIeld[0][0] == EMPTY)
+	{
+		return { 0, 0 };
+	}
+		if (inGame.ppFIeld[2][2] == EMPTY)
+	{
+		return { 2, 2 };
+	}
 
-	return { 1, 1 };
+	Coord voidArray[4]{0};
+	size_t voidNum = 0;
+	if(inGame.ppFIeld[0][1] == EMPTY)
+	{
+		voidArray[voidNum++] = {0 , 1};
+	}
+		if(inGame.ppFIeld[1][0] == EMPTY)
+	{
+		voidArray[voidNum++] = {1 , 0};
+	}
+		if(inGame.ppFIeld[1][2] == EMPTY)
+	{
+		voidArray[voidNum++] = {1 , 2};
+	}
+		if(inGame.ppFIeld[2][1] == EMPTY)
+	{
+		voidArray[voidNum++] = {2 , 1};
+	}
+
+	size_t index = getRandomNumber(0,1000) % voidNum;
+	if (voidNum > 0)
+	{
+		return voidArray[index];
+	}
+	
 }
+
 
 Progress getWon(Field& inGame)
 {
+	bool EMPRYcell = false;
+	bool rows = false;
+	bool colums = false;
+	Cell temp;
+	
+	for (size_t y = 0; y < inGame.SIZE; y++)
+	{
+		for (size_t x = 0; x < inGame.SIZE; x++)
+		{
+			if(inGame.ppFIeld[y][x] == EMPTY)
+				EMPRYcell = true;
+		}	
+	}
 
 
+	#ifdef DEBUG
+	if (EMPRYcell)
+		std::cout << "EMPRY cell!!!" << std::endl;
+	else
+		std::cout << "Not EMPRY cell!!!" << std::endl;
+	#endif	
+
+	temp = inGame.ppFIeld[1][1];
+	if (temp == inGame.ppFIeld[0][0] && temp == inGame.ppFIeld[2][2] )
+	{
+		if (temp == inGame.human)
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_HUMAN;
+			}
+			else if(temp == inGame.ai )
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_AI;
+			}
+	}
+
+	if (temp == inGame.ppFIeld[0][2] && temp == inGame.ppFIeld[2][0] )
+	{
+		if (temp == inGame.human)
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_HUMAN;
+			}
+			else if(temp == inGame.ai )
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_AI;
+			}
+	}
+
+	for (size_t y = 0; y < inGame.SIZE; y++)
+	{
+		
+		for (size_t x = 0; x < inGame.SIZE; x++)
+		{
+			if(x == 0)
+			{
+			 temp = inGame.ppFIeld[y][x];
+			 continue;
+			}
+			if (inGame.ppFIeld[y][x] == temp)
+				rows = true;
+			else 
+			{
+				rows = false;
+				temp = EMPTY;
+				continue;
+			}
+		}	
+		if (rows || colums)
+		{
+			if (temp == inGame.human)
+			{
+				rows = false;
+				temp = EMPTY;
+				return WON_HUMAN;
+			}
+			else if(temp == inGame.ai )
+			{
+				rows = false;
+				temp = EMPTY;
+				return WON_AI;
+			}
+			else if(EMPRYcell)
+			{
+				rows = false;
+				temp = EMPTY;
+				return IN_PROGRESS;
+			}
+			
+		}
+		
+	}
+
+for (size_t x = 0; x < inGame.SIZE; x++)
+	{
+		
+		for (size_t y = 0; y < inGame.SIZE; y++)
+		{
+			if(x == 0)
+			{
+			 temp = inGame.ppFIeld[y][x];
+			 continue;
+			}
+			if (inGame.ppFIeld[y][x] == temp)
+				colums = true;
+			else 
+			{
+				colums = false;
+				temp = EMPTY;
+				continue;
+			}
+		}	
+		if (rows || colums)
+		{
+			if (temp == inGame.human)
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_HUMAN;
+			}
+			else if(temp == inGame.ai )
+			{
+				colums = false;
+				temp = EMPTY;
+				return WON_AI;
+			}
+			else if(EMPRYcell)
+			{
+				colums = false;
+				temp = EMPTY;
+				return IN_PROGRESS;
+			}
+			
+		}
+		
+	}
+
+	
 	return DRAW;
 }
+
 
 void congrats(Progress progress)
 {
@@ -167,25 +390,29 @@ void deinitGame(Field& inGame)
 int main()
 {
 	srand(static_cast<unsigned int>(time(0)));
-
+	clearScreen();
 	Field TikTokToe;
 	initGame(TikTokToe);
+
+	printField(TikTokToe);
 
 	do
 	{
 		if (TikTokToe.turn % 2 == 0) // Ходит человек
 		{
-			Coord cordinate = getHumanCoordinate(TikTokToe);
-			TikTokToe.ppFIeld[cordinate.y][cordinate.x] = TikTokToe.human;
+			Coord cord = getHumanCoordinate(TikTokToe);
+			TikTokToe.ppFIeld[cord.y][cord.x] = TikTokToe.human;
 		}
 		else // Ходит ИИ
 		{
-			Coord cordinate = getAiCoordinate(TikTokToe);
-			TikTokToe.ppFIeld[cordinate.y][cordinate.x] = TikTokToe.ai;
+			Coord cord = getAiCoordinate(TikTokToe);
+			TikTokToe.ppFIeld[cord.y][cord.x] = TikTokToe.ai;
 		}
 
+		TikTokToe.turn++;
 
 		clearScreen();
+
 		printField(TikTokToe);
 
 		TikTokToe.progress = getWon(TikTokToe);
